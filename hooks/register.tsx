@@ -1,13 +1,11 @@
-import { atom, read, update } from 'claude-code'
-import type { Register, ThemeSetArgs } from 'claude-code'
+import type { EngineInterface, Register, ThemeSetArgs } from 'claude-code'
 
 import { makeColors } from './make-colors.js'
 import { BAND_IDLE, BAND_WORK, SCENE_IDLE, SCENE_WORK, SPINNER } from './scene.js'
 
+// Two scene names, as the official theme examples do it: the overdrive is its own scene, set while a main turn runs.
 const SCENE_ID = 'digital-rain'
-
-// True while a main-loop turn runs: the backdrop switches to its overdrive scene.
-const working = atom({ plugin: 'digital-rain', key: 'working' } as const, false)
+const WORK_ID = 'digital-rain-work'
 
 // Dark: phosphor green on a near-black terminal. Light: green-bar printout paper.
 const { theme, problems } = makeColors({
@@ -43,10 +41,13 @@ const { theme, problems } = makeColors({
   },
 })
 
-const LOOK: ThemeSetArgs = {
-  colors: theme,
-  // Thin frost: the rain stays bright at the edges; the scene darkens its own middle for the words.
-  backdrop: { scene: SCENE_ID, glass: { blur: 4, opacity: 0.55 } },
+// Thin frost: the rain stays bright at the edges; the scene darkens its own middle for the words.
+const look = (scene: string): ThemeSetArgs => ({ colors: theme, backdrop: { scene, glass: { blur: 4, opacity: 0.55 } } })
+
+async function show($: EngineInterface, scene: string): Promise<void> {
+  // The answer at session start often says no window has attached yet; the window draws the look
+  // when it attaches, so that answer is not worth a status line.
+  await $.theme.set(look(scene))
 }
 
 export const register: Register = on => {
@@ -56,19 +57,14 @@ export const register: Register = on => {
     if (unpainted !== undefined) {
       $.ui.toast(unpainted)
     }
-    await update($, working, () => false)
-    const set = await $.theme.set(LOOK)
-
-    if (!set.isDrawn) {
-      $.ui.status(set.reason)
-    }
+    await show($, SCENE_ID)
 
     return next(e)
   })
 
   on('turn.start', async ($, e, next) => {
     if (e.agentId === undefined) {
-      await update($, working, () => true)
+      await show($, WORK_ID)
     }
 
     return next(e)
@@ -76,27 +72,23 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) {
-      await update($, working, () => false)
+      await show($, SCENE_ID)
     }
 
     return next(e)
   })
 
-  on('ui.render', { component: 'Backdrop' }, async ($, e, next) => {
-    if ((e.surface !== 'desktop' && e.surface !== 'mobile') || e.props.scene !== SCENE_ID) {
+  on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
+    const scene = e.props.scene
+    if (e.surface !== 'desktop' || (scene !== SCENE_ID && scene !== WORK_ID)) {
       return next(e)
     }
     const { Svg } = $.ui.resolve(e)
-    const isWorking = await read($, working)
 
-    // The desktop stills a scene (drops its SMIL, stops its CSS animation) when it judges motion
-    // unwelcome, so every rain column also has a resting place of its own.
-    return (
-      <Svg
-        source={isWorking ? SCENE_WORK : SCENE_IDLE}
-        alt={isWorking ? 'Code rain racing while Claude works' : 'Green code rain falling behind the conversation'}
-        isInteractive
-      />
+    return scene === WORK_ID ? (
+      <Svg isInteractive alt="Code rain racing while Claude works" source={SCENE_WORK} />
+    ) : (
+      <Svg isInteractive alt="Green code rain falling behind the conversation" source={SCENE_IDLE} />
     )
   })
 

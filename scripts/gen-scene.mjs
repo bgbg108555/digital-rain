@@ -11,7 +11,7 @@ const H = 1000
 const BIN = ['0', '1']
 const HEX = '0123456789ABCDEF'.split('')
 const SYM = ['{', '}', '[', ']', '<', '>', '/', ';', ':', '=', '+', '*', '#', '$', '%', '&', '|', '~', '^', 'λ', 'Σ', 'Δ', 'Ω', 'π', '≡', '≠', '→', 'ƒ', '∴', '∞']
-const esc = c => (c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c)
+const esc = s => s.replace(/[<>&]/g, c => (c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&amp;'))
 const f1 = n => n.toFixed(1)
 const f2 = n => n.toFixed(2)
 
@@ -40,15 +40,14 @@ function scene(mode) {
   // column patterns: dim tail, two bright glyphs, glowing head
   const COLS = 20
   const LEN = 24
-  let defs = ''
+  // each column is one vertical line of text, drawn in place (no <use>): dim tail, two bright glyphs, glowing head
+  const columns = []
   for (let c = 0; c < COLS; c++) {
-    let t = `<text id="k${c}" class="col">`
-    for (let i = 0; i < LEN; i++) {
-      const cls = i === LEN - 1 ? ' class="hd"' : i >= LEN - 3 ? ' class="h2"' : ''
-      t += `<tspan x="0" dy="1.15em"${cls}>${esc(glyph())}</tspan>`
-    }
-    defs += t + '</text>'
+    // the tail in three steps, dim to bright (a gradient fill does not reach vertical text)
+    const run = k => Array.from({ length: k }, glyph).join('')
+    columns.push(`<tspan class="t1">${esc(run(7))}</tspan><tspan class="t2">${esc(run(7))}</tspan><tspan class="t3">${esc(run(7))}</tspan><tspan class="h2">${esc(run(2))}</tspan><tspan class="hd">${esc(run(1))}</tspan>`)
   }
+  const defs = ''
 
   // three depth layers: [class, font px, spacing, duration range s]
   const speed = work ? 0.42 : 1
@@ -67,7 +66,7 @@ function scene(mode) {
       const phase = rnd()
       // the resting place is the column's phase, so a frame with animation off still scatters the rain
       css += `.r${n}{transform:translateY(${f1(-900 + 2000 * phase)}px);animation:fall ${f2(dur)}s steps(${steps}) ${f2(-phase * dur)}s infinite}`
-      rain += `<use href="#k${Math.floor(rnd() * COLS)}" x="${f1(x)}" y="0" class="r${n}"/>`
+      rain += `<text x="${f1(x)}" y="0" class="col r${n}">${columns[Math.floor(rnd() * COLS)]}</text>`
       n++
     }
     rain += '</g>'
@@ -148,7 +147,7 @@ function scene(mode) {
   const STYLE = [
     'text{font-family:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;text-anchor:middle}',
     '.bg{fill:url(#bgD)}',
-    '.col{fill:url(#fadeD)}',
+    '.col{fill:#12d65e;writing-mode:vertical-lr;text-orientation:upright;letter-spacing:.15em;text-anchor:start}.t1{fill-opacity:.18}.t2{fill-opacity:.38}.t3{fill-opacity:.62}',
     '.h2{fill:#9dffc0}',
     '.hd{fill:#f2fff6;stroke:#3dff86;stroke-width:4px;stroke-opacity:.5;paint-order:stroke}',
     work ? '.L1{font-size:12px;opacity:.5}.L2{font-size:17px;opacity:.85}.L3{font-size:26px}' : '.L1{font-size:12px;opacity:.38}.L2{font-size:17px;opacity:.7}.L3{font-size:26px}',
@@ -189,7 +188,7 @@ function scene(mode) {
     '.edge{fill:url(#edgeG);animation:pulse 1.4s ease-in-out infinite}',
     '.beam{fill:url(#beamG);animation:beam 2.6s linear infinite}',
     '@media (prefers-color-scheme:light){',
-    '.bg{fill:url(#bgL)}.col{fill:url(#fadeL)}.h2{fill:#0b5a2a}.hd{fill:#03361a;stroke:#0f8a3c;stroke-opacity:.25}.fl{fill:#167a3c}',
+    '.bg{fill:url(#bgL)}.col{fill:#0f8a3c}.h2{fill:#0b5a2a}.hd{fill:#03361a;stroke:#0f8a3c;stroke-opacity:.25}.fl{fill:#167a3c}',
     '.st{fill:#0b6b5a}.gl{fill:#0f8a3c}.scan{fill:url(#scanL)}.dim{fill:url(#dimL)}.hl{fill:#145c2f}.rg,.arc{stroke:#0f8a3c}',
     '.hudbox{fill:#f2f7ef;stroke:#0f8a3c}.hudcorner{stroke:#0f8a3c}.bar,.ok,.cur,.barfill{fill:#0b4d24}.tag{fill:#a86a00}',
     '.L1{opacity:.25}.L2{opacity:.42}.L3{opacity:.6}',
@@ -202,7 +201,7 @@ function scene(mode) {
   ].join('')
 
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">` +
     `<style>${STYLE}${css}</style>` +
     '<defs>' +
     `<linearGradient id="bgD" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#010603"/><stop offset=".6" stop-color="${work ? '#04140b' : '#03100a'}"/><stop offset="1" stop-color="${work ? '#082414' : '#061a0f'}"/></linearGradient>` +
