@@ -1,0 +1,6 @@
+{
+  "name": "digital-rain",
+  "version": "0.3.0",
+  "description": "Phosphor-green terminal look with falling code rain, a hacker readout above the prompt, and both going into overdrive while Claude works",
+  "types": "./types/index.d.ts"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "digital-rain",
+  "owner": { "name": "bgbg108555" },
+  "plugins": [{ "name": "digital-rain", "source": "./" }]
+}
