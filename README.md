@@ -3,7 +3,7 @@
 A hacker-terminal look for the Claude desktop app: phosphor-green colors, falling code rain behind the conversation, and a live readout above the prompt that races while Claude works.
 
 - **Colors**: green-on-black terminal palette in dark mode, green-bar printout paper in light mode.
-- **Backdrop**: three layers of falling code rain, data streams, glitch bars and a HUD, behind frosted panels. While a turn runs it switches to an overdrive scene with a PROCESSING HUD, edge pulse and scan beam.
+- **Backdrop**: three depth layers of sparse code rain with long fading tails and white heads, behind frosted panels. While a turn runs the rain speeds up and a small PROCESSING tag appears.
 - **Band above the prompt**: link status, a scrolling hex ticker, a spectrum, a load meter and a scrambling address. It reads `LINK:SECURE` when idle and `DECRYPTING`, faster, while Claude works.
 - **Working row**: a scrambling hex strip with a scanner in place of the usual spinner.
 
